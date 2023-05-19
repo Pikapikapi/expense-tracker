@@ -1,36 +1,47 @@
 const express = require('express')
-// 載入 mongoose
-const mongoose = require('mongoose')
-const port = 3000
+const exhbs = require('express-handlebars')
+const handlebars = require('handlebars')
+const bodyParser = require('body-parser')
+const methodOverride = require('method-override')
+const routes = require('./routes')
+const session = require('express-session')
+//要寫在express-session之後，passport的session是建立在express-session上
+const usePassport = require('./config/passport')
+const { bindAuthVariablesMiddleware } = require('./middleware/auth')
+const flash = require('connect-flash')
 
-// 加入這段 code, 僅在非正式環境時, 使用 dotenv
-if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config()
-}
+require('./config/mongoose')
 
-//設定server
 const app = express()
-// 設定連線到 mongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+const port = process.env.PORT || 3000
+
+//Template engine
+app.engine('hbs', exhbs({ defaultLayout: 'main', extname: 'hbs' }))
+app.set('view engine', 'hbs')
+//註冊網頁中會使用到的helper
+handlebars.registerHelper('eq', function (a, b) {
+  return a === b
 })
 
-// 取得資料庫連線狀態
-const db = mongoose.connection
-// 連線異常
-db.on('error', () => {
-  console.log('mongodb error!')
-})
-// 連線成功
-db.once('open', () => {
-  console.log('mongodb connected!')
-})
+app.use(express.static('public'))
+// 取得瀏覽器回傳的資料
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(methodOverride('_method'))
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+  })
+)
+usePassport(app) // 呼叫passport函式並載入app，要寫在路由之前
+// 使用flash來快速顯示成功登入或失敗等訊息
+app.use(flash())
+//使用解構函數使用的方法，跟router當中使用的方式一樣，都是使用use添加
+app.use(bindAuthVariablesMiddleware)
 
-app.get('/', (req, res) => {
-  res.send('hello world!')
-})
+app.use(routes)
 
 app.listen(port, () => {
-  console.log(`App is running on http://localhost:${port}`)
+  console.log(`Now listening http://localhost:${port}`)
 })

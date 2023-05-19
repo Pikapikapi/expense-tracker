@@ -1,0 +1,79 @@
+<script>
+  window.onload = function() {
+    document.querySelectorAll('.delete-expense').forEach(function(btn) {
+      btn.addEventListener('click', function(event) {
+        event.preventDefault();
+        const expenseId = this.getAttribute('data-id')
+        if (confirm('你確定要刪除此記帳資訊嗎？')) {
+          deleteExpense(expenseId);
+          window.location.reload(true)
+        }
+      })
+    })
+
+    function deleteExpense(expenseId) {
+      fetch('/' + expenseId +'/delete', {
+        method: 'DELETE'
+      })
+      .then(
+        alert('動作已執行，將重新導向頁面...')
+      )
+      .catch(function(error) {
+        console.error('刪除發生錯誤:', error)
+      })
+    }
+  }
+</script>
+
+<main class='d-flex flex-column align-items-center'>
+  <div class='dropdown p-3'>
+    <a class='btn dropdown-toggle px-5 d-flex align-items-center btn__border' href='/' role='button' data-bs-toggle='dropdown' aria-expanded='false'>
+      <div class='dropdown__content'> 
+        {{#unless item}}
+          全項
+        {{else}}
+          {{item}}
+        {{/unless}}
+      </div>
+    </a>
+    <ul class='dropdown-menu'>
+      <li><a class='dropdown-item {{#unless item}}active{{/unless}}' href='/'>全項</a></li>
+      <li><a class='dropdown-item {{#if (eq item '家居物業')}}active{{/if}}' href='/home'>家居物業</a></li>
+      <li><a class='dropdown-item {{#if (eq item '交通出行')}}active{{/if}}' href='/transportation'>交通出行</a></li>
+      <li><a class='dropdown-item {{#if (eq item '休閒娛樂')}}active{{/if}}' href='/entertainment'>休閒娛樂</a></li>
+      <li><a class='dropdown-item {{#if (eq item '餐飲食品')}}active{{/if}}' href='/food'>餐飲食品</a></li>
+      <li><a class='dropdown-item {{#if (eq item '其他')}}active{{/if}}' href='/others'>其他</a></li>
+    </ul>
+  </div>
+
+  <!-- 總金額 -->
+  <div class='total__num d-flex p-2'>
+    <h2>總金額：</h2>
+    <h5>{{totalAmount}}</h5>
+  </div>
+  {{#each expenseLList}}
+    <div class='spend__item container d-flex justify-content-between align-items-center'>
+      <div class='spend__item__content d-flex flex-row align-items-center justify-content-between'>
+        <div class='spend__item__content__desc d-flex flex-row align-items-center'>
+          <div class='spend__item__content__desc__img px-3'>
+            <i class='{{this.categoryClass}} fa-2xl' style='color: #53afc6;'></i>
+          </div>
+          <div class='spend__item__content__desc p-2'>
+            <h4>{{this.name}}</h4>
+            <p>{{this.date}}</p>
+          </div>
+        </div>
+        <div class='spend__item__content__number pe-3'>
+          <h5>{{this.amount}}</h5>
+        </div>
+      </div>
+      <div class='spend__item__link p-2'>
+        <form action='/expense/{{this._id}}/edit'>
+          <button class='btn btn-primary p-2'>修改</button>
+          <button class='btn btn-danger p-2 delete-expense' data-id='{{this._id}}'>刪除</button>
+        </form>
+      </div>
+    </div>
+  {{/each}}
+  <a class='btn btn-primary m-3' href='/expense/new' role='button'>新增支出</a>
+</main>
